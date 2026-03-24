@@ -1,5 +1,5 @@
 import "./globals.css";
-import { TRPCProvider } from "@/providers/trpc-provider";
+import { TRPCProvider } from "@/lib/trpc-provider";
 import {Toaster} from "react-hot-toast"
 
 export default function RootLayout({ children }: any) {
