@@ -26,6 +26,7 @@ export const userRouter = router({
         name: z.string(),
         email: z.string(),
         bio: z.string(),
+        avatar_url:z.string().nullable().optional(),
       })
     )
     .mutation(async ({ input }) => {
@@ -37,6 +38,7 @@ export const userRouter = router({
             name: input.name,
             email: input.email,
             bio: input.bio,
+            avatar_url:input.avatar_url,
           },
         ])
         .select()
