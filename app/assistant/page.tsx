@@ -11,27 +11,32 @@ export default function AssistantPage() {
 
   const ai = trpc.ai.chat.useMutation();
 
-  // ✅ SAFE (fix build error)
-  const { data: sessions } = (trpc.ai as any).getSessions?.useQuery?.({
-    userId: "11111111-1111-1111-1111-111111111111",
-  }) || { data: null };
+  // ❌ REMOVE BROKEN CALLS (they cause 404)
+  // getSessions & getMessages removed
 
-  const { data: messages } = (trpc.ai as any).getMessages?.useQuery?.(
-    { sessionId: "default" },
-    { enabled: false }
-  ) || { data: null };
-
-  // ✅ SEND
+  // ✅ SEND (FIXED WITH RETRY)
   const send = async (msg?: string) => {
     const finalMsg = msg || message;
     if (!finalMsg.trim()) return;
 
     setChat((prev) => [...prev, { role: "user", text: finalMsg, image }]);
 
-    const res = await ai.mutateAsync({
-      message: finalMsg,
-      userId: "11111111-1111-1111-1111-111111111111",
-    });
+    let res;
+
+    try {
+      res = await ai.mutateAsync({
+        message: finalMsg,
+        userId: "11111111-1111-1111-1111-111111111111",
+      });
+    } catch (err) {
+      // 🔥 retry for Render cold start
+      await new Promise((r) => setTimeout(r, 4000));
+
+      res = await ai.mutateAsync({
+        message: finalMsg,
+        userId: "11111111-1111-1111-1111-111111111111",
+      });
+    }
 
     setChat((prev) => [
       ...prev,
@@ -42,12 +47,10 @@ export default function AssistantPage() {
     setImage(null);
   };
 
-  // ✅ COPY
   const copyText = (text: string) => {
     navigator.clipboard.writeText(text);
   };
 
-  // ✅ NEW CHAT (ADDED)
   const newChat = () => {
     setChat([]);
     setMessage("");
@@ -57,7 +60,6 @@ export default function AssistantPage() {
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-4">
 
-      {/* ✅ NEW CHAT BUTTON */}
       <div className="w-full max-w-2xl flex justify-end mb-4">
         <button
           onClick={newChat}
@@ -67,7 +69,6 @@ export default function AssistantPage() {
         </button>
       </div>
 
-      {/* Title */}
       {chat.length === 0 && (
         <div className="text-center mb-10">
           <p className="text-gray-400 text-sm">✨ Hi User</p>
@@ -77,7 +78,6 @@ export default function AssistantPage() {
         </div>
       )}
 
-      {/* Chat */}
       <div className="w-full max-w-2xl space-y-4 mb-6">
         {chat.map((msg, i) => (
           <div key={i} className="relative">
@@ -111,11 +111,9 @@ export default function AssistantPage() {
         ))}
       </div>
 
-      {/* Input */}
       <div className="w-full max-w-2xl">
         <div className="flex items-center gap-2 bg-[#1a1a1a] rounded-full px-4 py-3 border border-white/10">
 
-          {/* Image Upload */}
           <label className="cursor-pointer">
             <ImageIcon size={18} />
             <input
@@ -147,7 +145,6 @@ export default function AssistantPage() {
           </button>
         </div>
 
-        {/* Preview */}
         {image && (
           <img
             src={image}
@@ -155,7 +152,6 @@ export default function AssistantPage() {
           />
         )}
 
-        {/* Suggestions */}
         {chat.length === 0 && (
           <div className="flex flex-wrap gap-2 mt-4 justify-center">
 
@@ -184,7 +180,6 @@ export default function AssistantPage() {
         )}
 
       </div>
-
     </div>
   );
 }
